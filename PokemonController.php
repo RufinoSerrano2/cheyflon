@@ -1,6 +1,6 @@
 <?php
 class PokemonController {
-    public function list() {
+    public function list(Request $request) : Response {
         $sql = "SELECT * FROM pokemon";
         $conn = Connection::createConnection();
         $listPokemon = $conn->query($sql);
@@ -16,12 +16,7 @@ class PokemonController {
                 "pok_base_experience" => $pokemon['pok_base_experience']
             );
         }
-    
-        $str = JSON::stringify($mapa);
-        $d = JSON::parse($str, true);
-    
-        //header("Content-Type: application/json");
-    
-        echo JSON::stringify($d);
+
+        return new JsonResponse(body: $mapa);
     }
 }

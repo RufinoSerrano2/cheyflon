@@ -1,27 +1,30 @@
 <?php
 
-// Include router class
 require "./Router.php";
 require "./http/Request.php";
 require "./http/StatusCodes.php";
 
 require "./Connection.php";
 require "./PokemonController.php";
-require "./JSON.php";
-require "./XML.php";
+require "./formats/JSON.php";
+require "./formats/XML.php";
 
 $router = new Router();
+$router->addRoute(uri: "/pokemon", controller: "PokemonController", function: "list", methods: ["GET", "POST", "OPTIONS"]);
+$router->addRoute(uri: "/pokemon/test", controller: "PokemonController", function: "list");
+$response = $router->run();
 
-/*$router->add('/',function(){
-  echo "Hola Mundo - Esta es una ruta simple";
-});*/
+http_response_code($response->getStatusCode());
 
-$router->addRoute("/pokemon", "PokemonController", "list");
-$router->addRoute("/pokemon/test", "PokemonController", "lista");
-$res = $router->run();
+/*if (!in_array("Content-Type", $response->getHeaders())) {
+  header("Content-Type: application/json");
+}*/
 
-http_response_code($res->getStatusCode());
-echo $res->getBody();
+foreach ($response->getHeaders() as $key => $value) {
+    header("$key: $value");
+}
+
+echo $response->getBody();
 
 /*$res = Request::post("https://reqres.in/api/register", '{
   "email": "eve.holt@reqres.in",

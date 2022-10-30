@@ -1,13 +1,16 @@
 <?php
 class JsonResponse extends Response {
-    public function __construct(mixed $body = "", array $headers = [], array $cookies = [], int $statusCode = 200) {
-        header("Content-type: application/json");
+    public function __construct(mixed $body = "", array $headers = array(), array $cookies = array(), int $statusCode = 200) {
+        $headers["Content-Type"] = "application/json;charset=UTF-8";
 
-        $body = JSON::stringify($body);
+        if (!is_string($body)) {
+            $body = JSON::stringify($body);
+        }
+        
         parent::__construct($body, $headers, $cookies, $statusCode);
     }
 
-    public static function detailsResponse(string $details = "Endpoint not found", int $statusCode = 404) : JsonResponse {
+    public static function detailsResponse(mixed $details = "Endpoint not found", int $statusCode = 404) : JsonResponse {
         //header("Content-type: application/json");
 
         return new JsonResponse(

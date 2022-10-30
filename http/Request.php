@@ -2,10 +2,37 @@
 require "Response.php";
 
 class Request {
+    private string $endpoint;
+    private string $method;
     private string $body;
     private array $headers;
     private array $cookies;
-    private int $statusCode;
+
+    public function __construct() {
+        $this->method = strtoupper(htmlentities($_SERVER["REQUEST_METHOD"]));
+        $this->endpoint = (isset($_SERVER["REQUEST_URI"]) ? explode("?", htmlentities($_SERVER["REQUEST_URI"]))[0] : "/");
+        $this->body = JSON::stringify($this->getRequestBody());
+    }
+
+    /**
+     * Get the value of endpoint
+     */ 
+    public function getEndpoint()
+    {
+        return $this->endpoint;
+    }
+
+    /**
+     * Set the value of endpoint
+     *
+     * @return  self
+     */ 
+    public function setEndpoint($endpoint)
+    {
+        $this->endpoint = $endpoint;
+
+        return $this;
+    }
 
     /**
      * Get the value of body
@@ -67,27 +94,64 @@ class Request {
         return $this;
     }
 
-    public function JSON() {
-        return JSON::parse($this->getBody(), true);
-    }
-
     /**
-     * Get the value of statusCode
+     * Get the value of method
      */ 
-    public function getStatusCode()
+    public function getMethod()
     {
-        return $this->statusCode;
+        return $this->method;
     }
 
     /**
-     * Set the value of statusCode
+     * Set the value of method
      *
      * @return  self
      */ 
-    public function setStatusCode($statusCode)
+    public function setMethod($method)
     {
-        $this->statusCode = $statusCode;
+        $this->method = $method;
+
         return $this;
+    }
+
+    private function getRequestBody() {
+        return match ($this->getMethod()) {
+            "GET" => filter_var_array($_GET),
+            "POST" => $this->getPOSTBody(),
+            "PUT" => $this->getInputBody("PUT"),
+            "DELETE" => $this->getInputBody("DELETE"),
+            default => ""
+        };
+    }
+
+    private function getPOSTBody() {
+        if (!empty($_POST)) {
+            $body = filter_var_array($_POST);
+        } else {
+            $body = filter_var(file_get_contents("php://input"), FILTER_SANITIZE_SPECIAL_CHARS);
+        }
+    
+        return $body;
+    }
+    
+    private function getInputBody() {
+        parse_str(filter_var(file_get_contents("php://input"), FILTER_SANITIZE_SPECIAL_CHARS), $input);
+    
+        foreach ($input as $key => $value) {
+            unset($_PUT[$key]);
+    
+            $input[str_replace("amp;", "", $key)] = $value;
+        }
+    
+        return filter_var_array($input);
+    }
+
+    /**
+     * Parses and returns the request body as an array
+     * @return Request body as an array
+     */
+    public function JSON() : array {
+        return JSON::parse($this->getBody(), true);
     }
 
     /**
@@ -113,7 +177,15 @@ class Request {
     }
 
     /**
-     * Creates an HTTP request
+     * Sends an HTTP request
+     * @return Response HTTP Response wrapper
+     */
+    public function send() : Response {
+        return Request::sendRequest($this->getEndpoint(), $this->getMethod(), $this->getBody(), $this->getHeaders());
+    }
+
+    /**
+     * Sends an HTTP request
      * @param string $url API Endpoint
      * @param string $method HTTP method. Defaults to "GET"
      * @param array|string $data HTTP body data / URL query. Defaults to an empty array
@@ -122,12 +194,12 @@ class Request {
      */
     public static function sendRequest(string $url, string $method = "GET", array|string $data = [], array $headers = []) : Response {
         $response = new Response();
-
-        $ch = curl_init();
-
+        
         if (is_array($data)) {
             $data = JSON::stringify($data);
         }
+
+        $ch = curl_init();
         
         $options = array(
             CURLOPT_URL            => $url,

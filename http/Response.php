@@ -8,7 +8,7 @@ class Response {
     private array $cookies;
     private int $statusCode;
 
-    public function __construct(string $body = "", array $headers = [], array $cookies = [], int $statusCode = 200) {
+    public function __construct(string $body = "", array $headers = [], array $cookies = [], int $statusCode = StatusCodes::HTTP_200_OK) {
         $this->body = $body;
         $this->headers = $headers;
         $this->cookies = $cookies;
@@ -20,7 +20,7 @@ class Response {
      */ 
     public function getBody()
     {
-        return $this->body;
+        return (isset($this->body) ? $this->body : "");
     }
 
     /**

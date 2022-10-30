@@ -2,47 +2,58 @@
 class Router {
     private $map_routes = array();
 
-    public function addRoute(string $uri, string $controller, string $method, bool $public = true) {
+    public function addRoute(string $uri, string $controller, string $function, array $methods = ["GET"], bool $public = true) {
+        $uri = explode("?", $uri)[0];
         $uri = ("/" . trim($uri, "/"));
 
         $this->map_routes[$uri] = array(
             "controller" => $controller,
-            "method" => $method,
+            "function" => $function,
+            "methods" => $methods,
             "public" => $public
         );
     }
 
     public function run() : Response {
-        $response = new Response();
+        $request = new Request();
 
-        $uri_get = (isset($_SERVER["REQUEST_URI"]) ? $_SERVER["REQUEST_URI"] : "/");
-
-        if (!array_key_exists($uri_get, $this->map_routes)) {
+        if (!array_key_exists($request->getEndpoint(), $this->map_routes)) {
             return JsonResponse::detailsResponse(
                 details: "Endpoint not found",
                 statusCode: StatusCodes::HTTP_404_NOT_FOUND
             );
         }
 
-        $route = $this->map_routes[$uri_get];
+        $route = $this->map_routes[$request->getEndpoint()];
 
         $controller = $route["controller"];
-        $method = $route["method"];
+        $function = $route["function"];
+        $methods = $route["methods"];
 
-        if (!method_exists($controller, $method)) {
+        if (!method_exists($controller, $function)) {
             return JsonResponse::detailsResponse(
-                details: "Method '$method' from class '$controller' was not found",
+                details: "Function '$function' from class '$controller' was not found",
                 statusCode: StatusCodes::HTTP_501_NOT_IMPLEMENTED
             );
         }
 
-        if ($method instanceof \Closure) {
-            $method();
+        if (!in_array($request->getMethod(), $methods)) {
+            return JsonResponse::detailsResponse(
+                details: $request->getMethod() ." method not allowed",
+                statusCode: StatusCodes::HTTP_405_METHOD_NOT_ALLOWED
+            );
+        } else if ($request->getMethod() == "OPTIONS") {
+            return JsonResponse::detailsResponse(
+                details: $methods,
+                statusCode: StatusCodes::HTTP_200_OK
+            );
+        }
+
+        if ($function instanceof \Closure) {
+            $function();
         } else {
-            $request = new Request();
-            $request->setBody("Test");
             $controller = new $controller();
-            $controller->$method($request);
+            $response = $controller->$function(request: $request);
         }
 
         return $response;
