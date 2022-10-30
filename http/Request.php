@@ -155,7 +155,7 @@ class Request {
     }
 
     /**
-     * Creates an HTTP GET request
+     * Creates and sends an HTTP GET request
      * @param string $url API Endpoint
      * @param array|string $data HTTP GET body data / URL query. Defaults to an empty array
      * @param array $headers HTTP Headers array. Defaults to an empty array
@@ -166,7 +166,7 @@ class Request {
     }
 
     /**
-     * Creates an HTTP POST request
+     * Creates and sends an HTTP POST request
      * @param string $url API Endpoint
      * @param array|string $data HTTP POST body data. Defaults to an empty array
      * @param array $headers HTTP Headers array. Defaults to an empty array
