@@ -44,6 +44,9 @@ class Router {
 
         $route = $this->map_routes[$request->getEndpoint()];
 
+        // Test Pull Requests
+        $numero = 30;
+
         $controller = $route["controller"];
         $function = $route["function"];
         $methods = $route["methods"];
